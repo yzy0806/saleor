@@ -7,6 +7,7 @@ from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
 
 from ..account.models import Address
+from ..checkout.models import CheckoutLine
 from ..core.models import ModelWithMetadata
 from ..order.models import OrderLine
 from ..product.models import Product, ProductVariant
@@ -131,4 +132,31 @@ class Allocation(models.Model):
 
     class Meta:
         unique_together = [["order_line", "stock"]]
+        ordering = ("pk",)
+
+
+class Reservation(models.Model):
+    checkout_line = models.ForeignKey(
+        CheckoutLine,
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE,
+        related_name="reservations",
+    )
+    stock = models.ForeignKey(
+        Stock,
+        null=False,
+        blank=False,
+        on_delete=models.CASCADE,
+        related_name="reservations",
+    )
+    quantity_reserved = models.PositiveIntegerField(default=0)
+    reserved_until = models.DateTimeField()
+
+    class Meta:
+        unique_together = [["checkout_line", "stock"]]
+        indexes = [
+            models.Index(fields=['checkout_line', 'reserved_until']),
+        ]
+
         ordering = ("pk",)
