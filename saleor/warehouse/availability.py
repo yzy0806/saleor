@@ -13,7 +13,9 @@ if TYPE_CHECKING:
     from ..product.models import Product, ProductVariant
 
 
-def _get_available_quantity(stocks: StockQuerySet, checkout_lines: Optional[List["CheckoutLine"]] = None) -> int:
+def _get_available_quantity(
+    stocks: StockQuerySet, checkout_lines: Optional[List["CheckoutLine"]] = None
+) -> int:
     results = stocks.aggregate(
         total_quantity=Coalesce(Sum("quantity", distinct=True), 0),
         quantity_allocated=Coalesce(Sum("allocations__quantity_allocated"), 0),
@@ -25,7 +27,12 @@ def _get_available_quantity(stocks: StockQuerySet, checkout_lines: Optional[List
     return max(total_quantity - quantity_allocated - quantity_reserved, 0)
 
 
-def check_stock_quantity(variant: "ProductVariant", country_code: str, quantity: int, checkout_lines: Optional[List["CheckoutLine"]] = None):
+def check_stock_quantity(
+    variant: "ProductVariant",
+    country_code: str,
+    quantity: int,
+    checkout_lines: Optional[List["CheckoutLine"]] = None,
+):
     """Validate if there is stock available for given variant in given country.
 
     If so - returns None. If there is less stock then required raise InsufficientStock
@@ -95,11 +102,18 @@ def is_product_in_stock(product: "Product", country_code: str) -> bool:
     return any(stocks.values_list("available_quantity", flat=True))
 
 
-def get_reserved_quantity(stocks: StockQuerySet, checkout_lines: Optional[List["CheckoutLine"]] = None) -> int:
-    result = Reservation.objects.filter(
-        stock__in=stocks,
-    ).not_expired().exclude_checkout_lines(checkout_lines).aggregate(
-        quantity_reserved=Coalesce(Sum("quantity_reserved"), 0),
+def get_reserved_quantity(
+    stocks: StockQuerySet, checkout_lines: Optional[List["CheckoutLine"]] = None
+) -> int:
+    result = (
+        Reservation.objects.filter(
+            stock__in=stocks,
+        )
+        .not_expired()
+        .exclude_checkout_lines(checkout_lines)
+        .aggregate(
+            quantity_reserved=Coalesce(Sum("quantity_reserved"), 0),
+        )
     )
 
     return result["quantity_reserved"]
