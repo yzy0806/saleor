@@ -35,6 +35,33 @@ def test_check_stock_quantity_with_allocations_out_of_stock(
         check_stock_quantity(variant_with_many_stocks, COUNTRY_CODE, 5)
 
 
+def test_check_stock_quantity_with_reservations(
+    variant_with_many_stocks,
+    checkout_line_with_reservation_in_many_stocks,
+    checkout_line_with_one_reservation,
+):
+    assert check_stock_quantity(variant_with_many_stocks, COUNTRY_CODE, 2) is None
+
+
+def test_check_stock_quantity_with_reservations_excluding_given_checkout_lines(
+    variant_with_many_stocks,
+    checkout_line_with_reservation_in_many_stocks,
+    checkout_line_with_one_reservation,
+):
+    assert (
+        check_stock_quantity(
+            variant_with_many_stocks,
+            COUNTRY_CODE,
+            7,
+            [
+                checkout_line_with_reservation_in_many_stocks,
+                checkout_line_with_one_reservation,
+            ],
+        )
+        is None
+    )
+
+
 def test_check_stock_quantity_without_stocks(variant_with_many_stocks):
     variant_with_many_stocks.stocks.all().delete()
     with pytest.raises(InsufficientStock):
@@ -64,6 +91,31 @@ def test_get_available_quantity_with_allocations(
 ):
     available_quantity = get_available_quantity(variant_with_many_stocks, COUNTRY_CODE)
     assert available_quantity == 3
+
+
+def test_get_available_quantity_with_reservations(
+    variant_with_many_stocks,
+    checkout_line_with_reservation_in_many_stocks,
+    checkout_line_with_one_reservation,
+):
+    available_quantity = get_available_quantity(variant_with_many_stocks, COUNTRY_CODE)
+    assert available_quantity == 2
+
+
+def test_get_available_quantity_with_reservations_excluding_given_checkout_lines(
+    variant_with_many_stocks,
+    checkout_line_with_reservation_in_many_stocks,
+    checkout_line_with_one_reservation,
+):
+    available_quantity = get_available_quantity(
+        variant_with_many_stocks,
+        COUNTRY_CODE,
+        [
+            checkout_line_with_reservation_in_many_stocks,
+            checkout_line_with_one_reservation,
+        ],
+    )
+    assert available_quantity == 7
 
 
 def test_get_available_quantity_without_stocks(variant_with_many_stocks):
@@ -97,3 +149,41 @@ def test_check_stock_quantity_bulk(variant_with_many_stocks):
         check_stock_quantity_bulk(
             [variant_with_many_stocks], country_code, [available_quantity]
         )
+
+
+def test_check_stock_quantity_bulk_with_reservations(
+    variant_with_many_stocks,
+    checkout_line_with_reservation_in_many_stocks,
+    checkout_line_with_one_reservation,
+):
+    variant = variant_with_many_stocks
+    country_code = "US"
+    available_quantity = get_available_quantity(variant, country_code)
+
+    # test that it doesn't raise error for available quantity
+    assert (
+        check_stock_quantity_bulk(
+            [variant_with_many_stocks], country_code, [available_quantity]
+        )
+        is None
+    )
+
+    # test that it raises an error for exceeded quantity
+    with pytest.raises(InsufficientStock):
+        check_stock_quantity_bulk(
+            [variant_with_many_stocks], country_code, [available_quantity + 1]
+        )
+
+    # test that it passes if checkout lines are excluded
+    assert (
+        check_stock_quantity_bulk(
+            [variant_with_many_stocks],
+            country_code,
+            [available_quantity + 1],
+            [
+                checkout_line_with_reservation_in_many_stocks,
+                checkout_line_with_one_reservation,
+            ],
+        )
+        is None
+    )
