@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.utils import IntegrityError
 
+from ....checkout.models import CheckoutLine
 from ....core.permissions import ProductPermissions
 from ....product.error_codes import CollectionErrorCode, ProductErrorCode
 from ....product.models import CollectionChannelListing
@@ -234,6 +235,9 @@ class ProductChannelListingUpdate(BaseChannelListingMutation):
             channel=channel, variant__product_id=product
         ).exists():
             product_channel_listing.delete()
+        CheckoutLine.objects.filter(
+            variant__id__in=variants, checkout__channel_id=channel
+        ).delete()
 
     @classmethod
     def remove_channels(cls, product: "ProductModel", remove_channels: List[Dict]):
@@ -242,6 +246,9 @@ class ProductChannelListingUpdate(BaseChannelListingMutation):
         ).delete()
         ProductVariantChannelListing.objects.filter(
             variant__product_id=product.pk, channel_id__in=remove_channels
+        ).delete()
+        CheckoutLine.objects.filter(
+            variant__product=product, checkout__channel__id__in=remove_channels
         ).delete()
 
     @classmethod

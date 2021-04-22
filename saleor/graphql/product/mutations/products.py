@@ -10,6 +10,7 @@ from graphene.types import InputObjectType
 
 from ....attribute import AttributeInputType, AttributeType
 from ....attribute import models as attribute_models
+from ....checkout import models as checkout_models
 from ....core.exceptions import PermissionDenied
 from ....core.permissions import ProductPermissions, ProductTypePermissions
 from ....core.utils.editorjs import clean_editor_js
@@ -739,6 +740,10 @@ class ProductDelete(ModelDeleteMutation):
         order_models.OrderLine.objects.filter(pk__in=line_pks).delete()
         if orders_id:
             recalculate_orders_task.delay(list(orders_id))
+
+        # delete checkout lines for deleted variants
+        checkout_models.CheckoutLine.objects.filter(variant__id__in=variants_id)
+
         info.context.plugins.product_deleted(instance, variants_id)
 
         return response
@@ -1055,6 +1060,9 @@ class ProductVariantDelete(ModelDeleteMutation):
         order_models.OrderLine.objects.filter(pk__in=line_pks).delete()
         if orders_id:
             recalculate_orders_task.delay(list(orders_id))
+
+        # delete checkout lines for deleted variants
+        checkout_models.CheckoutLine.objects.filter(variant_id=instance.pk)
 
         transaction.on_commit(
             lambda: info.context.plugins.product_variant_deleted(variant)

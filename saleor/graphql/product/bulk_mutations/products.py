@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from graphene.types import InputObjectType
 
+from ....checkout import models as checkout_models
 from ....core.permissions import ProductPermissions, ProductTypePermissions
 from ....order import OrderStatus
 from ....order import models as order_models
@@ -126,6 +127,9 @@ class ProductBulkDelete(ModelBulkDeleteMutation):
         order_models.OrderLine.objects.filter(pk__in=line_pks).delete()
         if orders_id:
             recalculate_orders_task.delay(list(orders_id))
+
+        # delete checkout lines for deleted variants
+        checkout_models.CheckoutLine.objects.filter(variant_id__in=variants_ids)
 
         return response
 
@@ -545,6 +549,9 @@ class ProductVariantBulkDelete(ModelBulkDeleteMutation):
         order_models.OrderLine.objects.filter(pk__in=line_pks).delete()
         if orders_id:
             recalculate_orders_task.delay(list(orders_id))
+
+        # delete checkout lines for deleted variants
+        checkout_models.CheckoutLine.objects.filter(variant_id__in=pks)
 
         # set new product default variant if any has been removed
         products = models.Product.objects.filter(

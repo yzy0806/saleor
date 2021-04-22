@@ -31,6 +31,7 @@ from ...checkout.utils import (
     recalculate_checkout_discount,
     remove_promo_code_from_checkout,
     update_checkout_quantity,
+    validate_variants_in_checkout_lines,
 )
 from ...core import analytics
 from ...core.exceptions import InsufficientStock, PermissionDenied, ProductNotPublished
@@ -681,7 +682,6 @@ class CheckoutShippingAddressUpdate(BaseMutation, I18nMixin):
 
         discounts = info.context.discounts
         manager = info.context.plugins
-        lines = fetch_checkout_lines(checkout)
         checkout_info = fetch_checkout_info(checkout, lines, discounts, manager)
 
         country = get_user_country_context(
@@ -940,12 +940,7 @@ class CheckoutComplete(BaseMutation):
 
             manager = info.context.plugins
             lines = fetch_checkout_lines(checkout)
-            variants_id = {line.variant.id for line in lines}
-            validate_variants_available_in_channel(
-                variants_id,
-                checkout.channel,
-                CheckoutErrorCode.UNAVAILABLE_VARIANT_IN_CHANNEL,
-            )
+            validate_variants_in_checkout_lines(lines)
             checkout_info = fetch_checkout_info(
                 checkout, lines, info.context.discounts, manager
             )
