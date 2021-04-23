@@ -65,6 +65,8 @@ All notable, unreleased changes to this project will be documented in this file.
 - Performance upgrade on orders query with `totalAuthorized` field - #7170 by @tomaszszymanski129
 - Fix export with empty assignment values - #7207 by @IKarbowiak
 - Change exported file name - #7218 by @IKarbowiak
+- Fix draft order tax mismatch - #7226 by @IKarbowiak
+  - Introduce `calculate_order_line_total` plugin method
 
 ### Breaking
 - Multichannel MVP: Multicurrency - #6242 by @fowczarek @d-wysocki
