@@ -59,4 +59,7 @@ GraphQL, Django, and ReactJS."                                                  
       org.opencontainers.image.authors="Mirumee Software (https://mirumee.com)"        \
       org.opencontainers.image.licenses="BSD 3"
 
+RUN python3 manage.py migrate
+RUN python3 manage.py populatedb --createsuperuser
+
 CMD ["gunicorn", "--bind", ":8000", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "saleor.asgi:application"]
