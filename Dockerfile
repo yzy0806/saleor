@@ -64,5 +64,8 @@ GraphQL, Django, and ReactJS."                                                  
 # RUN python3 manage.py populatedb --createsuperuser
 
 CMD gunicorn --bind=:8000 --workers=4 --worker-class=uvicorn.workers.UvicornWorker saleor.asgi:application \
+&& echo "server started" \
 && python3 manage.py migrate \
-&& python3 manage.py populatedb --createsuperuser 
+&& echo "db migration completed" \
+&& python3 manage.py populatedb --createsuperuser \
+&& echo "DB data populate completed"
